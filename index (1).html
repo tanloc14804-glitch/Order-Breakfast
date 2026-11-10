@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lộc ơi 🥪 Hôm nay mình ăn gì thế?</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<style>
+:root{--bg:#f4f7fc;--card:#fff;--tx:#111827;--mu:#6b7280;--bd:#e5e7eb;--pr:#2563eb;--hd1:#17357e;--hd2:#2b6df0;--ok:#16a34a;--bad:#dc2626}
+@media(prefers-color-scheme:dark){:root{--bg:#0f172a;--card:#1e293b;--tx:#f1f5f9;--mu:#94a3b8;--bd:#334155;--pr:#3b82f6}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:14px/1.5 "Segoe UI",system-ui,-apple-system,Roboto,sans-serif}
+header{background:linear-gradient(90deg,var(--hd1),var(--hd2));color:#fff;padding:22px 16px}
+.w{max-width:960px;margin:0 auto}
+header h1{margin:0;font-size:24px}header p{margin:4px 0 0;font-size:13px;opacity:.92}
+.hrow{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.who{font-size:12px;text-align:right;white-space:nowrap}
+.who button{margin-top:4px;background:rgba(255,255,255,.18);color:#fff;border:0}
+main{padding:16px}
+.tabs{display:flex;gap:8px;margin-bottom:14px}
+.tab{background:var(--card);border:1px solid var(--bd);color:var(--tx);font-weight:600}
+.tab.on{background:#dbe7ff;border-color:#9db9f5;color:#1d4ed8}
+button{font:inherit;font-size:13px;padding:8px 13px;border-radius:8px;border:1px solid transparent;cursor:pointer;background:#eef1f6;color:#111827}
+button.p{background:var(--pr);color:#fff}button.d{background:#fee2e2;color:var(--bad)}button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--pr);outline-offset:1px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:14px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:16px;margin-bottom:14px}
+.stat small{color:var(--mu);font-size:12px}.stat b{display:block;font-size:20px}
+h2{margin:0 0 12px;font-size:17px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media(max-width:640px){.g2{grid-template-columns:1fr}}
+label{display:block;font-size:12px;font-weight:600;margin:10px 0 4px}
+input,select,textarea{width:100%;font:inherit;padding:9px 11px;border:1px solid var(--bd);border-radius:8px;background:var(--card);color:var(--tx)}
+input[readonly],textarea[readonly]{background:var(--bg);color:var(--mu)}
+.hint{font-size:11px;color:var(--mu);margin-top:3px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.cart{margin-top:10px;border:1px dashed var(--bd);border-radius:8px;padding:8px}
+.cart .it{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--bd)}.cart .it:last-child{border:0}
+.q button{padding:2px 8px}
+.menus{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+.m{border:1px solid var(--bd);border-radius:10px;padding:10px;cursor:pointer;background:var(--card);text-align:left;color:var(--tx)}.m:hover{border-color:var(--pr)}
+.m b{display:block}.m span{display:block;font-size:12px;color:var(--mu)}
+.st{color:#f59e0b;letter-spacing:1px}
+.pay{background:#fff7ed;border:1px solid #fdba74;color:#7c2d12;border-radius:8px;padding:10px 12px;margin-top:10px}
+.tw{overflow-x:auto}table{width:100%;border-collapse:collapse;min-width:720px}
+th{background:var(--bg);color:var(--mu);font-size:12px;text-align:left;padding:9px 8px}
+td{padding:10px 8px;border-bottom:1px solid var(--bd);vertical-align:top}
+.rate button{background:none;border:0;padding:0 1px;font-size:17px;color:#f59e0b}.rate button:disabled{cursor:default}
+.tag{font-size:11px;padding:1px 7px;border-radius:99px;background:#dcfce7;color:#166534}
+.mine{box-shadow:inset 3px 0 0 var(--pr)}
+.hide{display:none!important}
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#111827;color:#fff;padding:10px 16px;border-radius:8px;z-index:30}
+.ov{position:fixed;inset:0;background:rgba(15,23,42,.65);display:flex;align-items:center;justify-content:center;z-index:20;padding:16px}
+.mb{background:var(--card);border-radius:14px;padding:22px;width:100%;max-width:400px}
+.warn{background:#fef3c7;color:#78350f;padding:10px 14px;border-radius:8px;margin-bottom:14px}
+</style>
+</head>
+<body>
+<div class="ov" id="login"><div class="mb">
+  <h2>Lộc ơi 🥪 Hôm nay mình ăn gì thế?</h2>
+  <label for="lname">Tên khách hàng</label>
+  <input id="lname" placeholder="Nhập tên của bạn" autocomplete="off">
+  <div class="hint">Dùng cùng một tên mỗi lần để sửa đơn, đánh giá và xác nhận thanh toán đơn của mình.</div>
+  <button class="p" style="width:100%;margin-top:14px" id="lgo">Vào app</button>
+</div></div>
+
+<header><div class="w hrow"><div>
+  <h1>Lộc ơi 🥪 Hôm nay mình ăn gì thế?</h1>
+  <p>Làm việc là phải tâm huyết - Nếu không có “tâm” thì chỉ có “huyết” 🩸</p></div>
+  <div class="who"><div id="whoami"></div><button id="lout">Đổi tên</button></div></div></header>
+
+<main class="w">
+<div id="cfg" class="warn hide">Chưa kết nối database: hãy điền SUPABASE_URL và SUPABASE_KEY ở đầu đoạn script trong file index.html.</div>
+<div class="tabs">
+  <button class="tab on" data-t="t1">📝 Đặt món / Đơn hàng</button>
+  <button class="tab hide" data-t="t2" id="tabMenu">🍽️ Quản lý Menu</button>
+</div>
+
+<section id="t1">
+  <div class="stats">
+    <div class="card stat"><small>Tổng đơn hàng</small><b id="sOrders">0</b></div>
+    <div class="card stat"><small>Số món trong Menu</small><b id="sMenu">0</b></div>
+    <div class="card stat hide" id="sumBox"><small>Tổng giá trị đơn</small><b id="sSum">0 ₫</b></div>
+  </div>
+
+  <div class="card"><h2>Thực đơn &amp; đánh giá</h2><div class="menus" id="menuCards"></div></div>
+
+  <div class="card">
+    <h2 id="formTitle">Tạo đơn đặt món</h2>
+    <div class="g2">
+      <div><label for="cname">Tên khách hàng *</label><input id="cname"></div>
+      <div><label for="odate">Ngày đặt món *</label><input type="date" id="odate"></div>
+    </div>
+    <label for="dish">Món ăn *</label>
+    <div class="row"><select id="dish" style="flex:1;min-width:200px"></select>
+      <input type="number" id="qty" min="1" value="1" style="width:80px" aria-label="Số lượng">
+      <button class="p" id="addDish">+ Thêm vào đơn</button></div>
+    <div class="hint">Giá tiền và mô tả tự động lấy từ Menu. Bạn có thể thêm nhiều món vào một đơn.</div>
+    <div class="cart" id="cart"></div>
+    <div class="g2">
+      <div><label>Giá tiền (tổng các món)</label><input id="price" readonly placeholder="Tự động hiển thị"></div>
+      <div><label>Mô tả món ăn</label><textarea id="desc" rows="2" readonly placeholder="Tự động hiển thị"></textarea></div>
+    </div>
+    <label for="note">Ghi chú</label>
+    <textarea id="note" rows="2" placeholder="Ví dụ: không hành, ít cay, giao trước 12h..."></textarea>
+    <div class="row" style="margin-top:12px">
+      <button class="p" id="save">+ Lưu đơn hàng</button><button id="reset">Làm mới</button>
+      <button id="payBtn">💳 Thanh toán</button></div>
+    <div class="pay hide" id="payBox">Momo: <b>0911157859</b>
+      <button id="copy" style="padding:2px 8px;margin:0 4px" title="Sao chép số Momo">📋 Sao chép</button> - Người nhận: <b>Phan Tấn Lộc</b>
+      <div class="hint">Không bắt buộc thanh toán ngay. Bạn có thể tick “Đã thanh toán” trong danh sách sau.</div></div>
+  </div>
+
+  <div class="card">
+    <div class="row" style="justify-content:space-between"><h2 style="margin:0">Danh sách đơn hàng</h2>
+      <input id="q" placeholder="Tìm theo tên khách / món ăn..." style="max-width:300px"></div>
+    <div class="tw" style="margin-top:10px"><table><thead><tr><th>Khách hàng</th><th>Món đã đặt &amp; đánh giá</th><th>Tổng tiền</th><th>Ngày đặt</th><th>Ghi chú</th><th>Đã thanh toán</th><th>Thao tác</th></tr></thead><tbody id="orders"></tbody></table></div>
+    <button id="csv" class="hide" style="margin-top:12px">Xuất đơn hàng CSV</button>
+  </div>
+</section>
+
+<section id="t2" class="hide">
+  <div class="card"><h2 id="mTitle">Thêm món vào Menu</h2>
+    <div class="g2"><div><label for="mname">Tên món ăn *</label><input id="mname" placeholder="Ví dụ: Cơm gà xối mỡ"></div>
+      <div><label for="mprice">Giá tiền (VNĐ) *</label><input type="number" id="mprice" placeholder="Ví dụ: 45000"></div></div>
+    <label for="mdesc">Mô tả món ăn</label><textarea id="mdesc" rows="2" placeholder="Thành phần, khẩu phần, cách chế biến..."></textarea>
+    <div class="row" style="margin-top:12px"><button class="p" id="mSave">+ Thêm món</button><button id="mReset">Làm mới</button></div></div>
+  <div class="card"><h2>Menu hiện tại</h2><div class="tw"><table style="min-width:520px"><thead><tr><th>Tên món ăn</th><th>Mô tả món ăn</th><th>Giá tiền</th><th>Thao tác</th></tr></thead><tbody id="menuRows"></tbody></table></div></div>
+</section>
+</main>
+<div id="toast" class="hide"></div>
+
+<script>
+const SUPABASE_URL = "https://YOUR-PROJECT.supabase.co";
+const SUPABASE_KEY = "YOUR-ANON-PUBLIC-KEY";
+const ADMIN = "tanloc04";
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const vnd = n => Number(n || 0).toLocaleString("vi-VN") + " ₫";
+const today = () => new Date().toISOString().slice(0, 10);
+let db, user = null, isAdmin = false, menu = [], orders = [], cart = [], editId = null, editMenuId = null;
+const mine = o => user && (isAdmin || o.customer.trim().toLowerCase() === user.toLowerCase());
+const total = items => (items || []).reduce((s, i) => s + i.price * i.qty, 0);
+
+function toast(t) { const e = $("toast"); e.textContent = t; e.classList.remove("hide"); clearTimeout(toast.t); toast.t = setTimeout(() => e.classList.add("hide"), 2600); }
+
+/* ---------- Đăng nhập ---------- */
+function enter(name) {
+  user = name.trim(); isAdmin = user === ADMIN;
+  localStorage.setItem("fo_user", user);
+  $("login").classList.add("hide");
+  $("whoami").textContent = (isAdmin ? "👑 Chủ quán: " : "👤 ") + user;
+  $("tabMenu").classList.toggle("hide", !isAdmin);
+  $("sumBox").classList.toggle("hide", !isAdmin);
+  $("csv").classList.toggle("hide", !isAdmin);
+  $("cname").value = user; $("cname").readOnly = !isAdmin;
+  showTab("t1"); render();
+}
+$("lgo").onclick = () => { const v = $("lname").value.trim(); v ? enter(v) : toast("Vui lòng nhập tên khách hàng"); };
+$("lname").onkeydown = e => { if (e.key === "Enter") $("lgo").click(); };
+$("lout").onclick = () => { localStorage.removeItem("fo_user"); user = null; isAdmin = false; $("lname").value = ""; $("login").classList.remove("hide"); showTab("t1"); render(); };
+
+function showTab(id) {
+  if (id === "t2" && !isAdmin) id = "t1";
+  ["t1", "t2"].forEach(t => $(t).classList.toggle("hide", t !== id));
+  document.querySelectorAll(".tab").forEach(b => b.classList.toggle("on", b.dataset.t === id));
+}
+document.querySelectorAll(".tab").forEach(b => b.onclick = () => showTab(b.dataset.t));
+
+/* ---------- Dữ liệu ---------- */
+async function load() {
+  const [m, o] = await Promise.all([
+    db.from("menu").select("*").order("created_at"),
+    db.from("orders").select("*").order("created_at", { ascending: false })
+  ]);
+  if (m.error || o.error) return toast("Lỗi kết nối: " + (m.error || o.error).message);
+  menu = m.data; orders = o.data; render();
+}
+
+function ratingStats() {
+  const s = {};
+  orders.forEach(o => (o.items || []).forEach(i => { if (i.rating) { const x = s[i.menu_id] || (s[i.menu_id] = { sum: 0, n: 0 }); x.sum += i.rating; x.n++; } }));
+  return s;
+}
+function starLine(x) {
+  if (!x) return '<span class="st">☆☆☆☆☆</span> <small>Chưa có đánh giá</small>';
+  const a = x.sum / x.n, r = Math.round(a);
+  return `<span class="st">${"★".repeat(r)}${"☆".repeat(5 - r)}</span> ${a.toFixed(1)} (${x.n} đánh giá)`;
+}
+
+/* ---------- Hiển thị ---------- */
+function render() {
+  const rs = ratingStats();
+  $("sOrders").textContent = orders.length;
+  $("sMenu").textContent = menu.length;
+  $("sSum").textContent = vnd(orders.reduce((s, o) => s + total(o.items), 0));
+
+  const cur = $("dish").value;
+  $("dish").innerHTML = '<option value="">-- Chọn món trong Menu --</option>' + menu.map(m => `<option value="${m.id}">${esc(m.name)} - ${vnd(m.price)}</option>`).join("");
+  $("dish").value = cur;
+  $("menuCards").innerHTML = menu.length ? menu.map(m => `<button class="m" data-id="${m.id}"><b>${esc(m.name)}</b><span>${esc(m.description)}</span><b style="color:var(--pr)">${vnd(m.price)}</b><span>${starLine(rs[m.id])}</span></button>`).join("") : "<div class='hint'>Menu đang trống. Chủ quán hãy thêm món ở tab Quản lý Menu.</div>";
+  document.querySelectorAll(".m").forEach(b => b.onclick = () => { $("dish").value = b.dataset.id; showDish(); });
+
+  renderCart(); renderOrders(); renderMenuRows();
+}
+
+function showDish() {
+  const m = menu.find(x => x.id === $("dish").value);
+  $("desc").value = m ? m.description || "" : cart.map(i => i.name + ": " + (i.desc || "")).join("\n");
+}
+$("dish").onchange = showDish;
+
+function renderCart() {
+  $("cart").innerHTML = cart.length ? cart.map((i, k) => `<div class="it"><span>${esc(i.name)} <small>(${vnd(i.price)})</small></span><span class="q row"><button data-k="${k}" data-d="-1">−</button><b>${i.qty}</b><button data-k="${k}" data-d="1">+</button><button class="d" data-k="${k}" data-d="x">Xóa</button></span></div>`).join("") : "<div class='hint'>Chưa chọn món nào.</div>";
+  $("cart").querySelectorAll("button").forEach(b => b.onclick = () => {
+    const i = cart[b.dataset.k], d = b.dataset.d;
+    if (d === "x") cart.splice(b.dataset.k, 1); else { i.qty += +d; if (i.qty < 1) cart.splice(b.dataset.k, 1); }
+    renderCart();
+  });
+  $("price").value = cart.length ? vnd(total(cart)) : "";
+  if (!$("dish").value) showDish();
+}
+
+$("addDish").onclick = () => {
+  const m = menu.find(x => x.id === $("dish").value), q = Math.max(1, parseInt($("qty").value) || 1);
+  if (!m) return toast("Hãy chọn món ăn");
+  const e = cart.find(i => i.menu_id === m.id);
+  if (e) e.qty += q; else cart.push({ menu_id: m.id, name: m.name, price: m.price, desc: m.description, qty: q });
+  $("qty").value = 1; renderCart();
+};
+
+function renderOrders() {
+  const k = $("q").value.trim().toLowerCase();
+  const list = orders.filter(o => !k || o.customer.toLowerCase().includes(k) || (o.items || []).some(i => i.name.toLowerCase().includes(k)));
+  $("orders").innerHTML = list.length ? list.map(o => {
+    const own = mine(o);
+    const items = (o.items || []).map((i, n) => `<div><b>${esc(i.name)}</b> × ${i.qty} <span class="rate">${[1, 2, 3, 4, 5].map(s => `<button data-o="${o.id}" data-n="${n}" data-s="${s}" ${own && !i.rating ? "" : "disabled"} aria-label="${s} sao">${i.rating >= s ? "★" : "☆"}</button>`).join("")}</span></div>`).join("");
+    return `<tr class="${own ? "mine" : ""}"><td><b>${esc(o.customer)}</b></td><td>${items}${own ? '<div class="hint">Mỗi món chỉ đánh giá 1 lần.</div>' : ""}</td><td><b>${vnd(total(o.items))}</b></td><td>${esc(o.order_date)}</td><td>${esc(o.note)}</td>
+    <td><input type="checkbox" style="width:auto" data-pay="${o.id}" ${o.paid ? "checked" : ""} ${own ? "" : "disabled"} aria-label="Đã thanh toán"> ${o.paid ? '<span class="tag">Đã trả</span>' : ""}</td>
+    <td>${own ? `<button data-edit="${o.id}">Sửa</button> <button class="d" data-del="${o.id}">Xóa</button>` : '<span class="hint">Chỉ xem</span>'}</td></tr>`;
+  }).join("") : '<tr><td colspan="7" class="hint">Chưa có đơn hàng nào.</td></tr>';
+
+  document.querySelectorAll(".rate button:not(:disabled)").forEach(b => b.onclick = () => rate(b.dataset.o, +b.dataset.n, +b.dataset.s));
+  document.querySelectorAll("[data-pay]:not(:disabled)").forEach(b => b.onchange = () => update(b.dataset.pay, { paid: b.checked }));
+  document.querySelectorAll("[data-edit]").forEach(b => b.onclick = () => startEdit(b.dataset.edit));
+  document.querySelectorAll("[data-del]").forEach(b => b.onclick = () => delOrder(b.dataset.del));
+}
+$("q").oninput = renderOrders;
+
+async function update(id, patch) {
+  const { error } = await db.from("orders").update(patch).eq("id", id);
+  error ? toast("Lỗi: " + error.message) : load();
+}
+function rate(id, n, s) {
+  const o = orders.find(x => x.id === id); if (!o || !mine(o) || o.items[n].rating) return;
+  const items = o.items.map((i, k) => k === n ? { ...i, rating: s } : i);
+  update(id, { items }); toast("Cảm ơn bạn đã đánh giá " + "★".repeat(s));
+}
+function startEdit(id) {
+  const o = orders.find(x => x.id === id); if (!o || !mine(o)) return toast("Bạn chỉ sửa được đơn của mình");
+  editId = id; cart = JSON.parse(JSON.stringify(o.items)); $("cname").value = o.customer; $("odate").value = o.order_date; $("note").value = o.note || "";
+  $("formTitle").textContent = "Sửa đơn hàng"; $("save").textContent = "Cập nhật đơn hàng"; renderCart(); scrollTo({ top: 0, behavior: "smooth" });
+}
+async function delOrder(id) {
+  const o = orders.find(x => x.id === id); if (!o || !mine(o) || !confirm("Xóa đơn hàng này?")) return;
+  const { error } = await db.from("orders").delete().eq("id", id); error ? toast("Lỗi: " + error.message) : (toast("Đã xóa đơn"), load());
+}
+function resetForm() {
+  editId = null; cart = []; $("cname").value = user || ""; $("odate").value = today(); $("note").value = ""; $("dish").value = ""; $("desc").value = "";
+  $("formTitle").textContent = "Tạo đơn đặt món"; $("save").textContent = "+ Lưu đơn hàng"; renderCart();
+}
+$("reset").onclick = resetForm;
+
+$("save").onclick = async () => {
+  const name = $("cname").value.trim();
+  if (!name || !$("odate").value) return toast("Vui lòng nhập tên khách hàng và ngày đặt");
+  if (!cart.length) return toast("Hãy thêm ít nhất 1 món vào đơn");
+  const row = { customer: isAdmin ? name : user, order_date: $("odate").value, note: $("note").value.trim(), items: cart };
+  let r;
+  if (editId) { if (!mine(orders.find(o => o.id === editId))) return toast("Bạn chỉ sửa được đơn của mình"); r = await db.from("orders").update(row).eq("id", editId); }
+  else r = await db.from("orders").insert({ ...row, paid: false });
+  if (r.error) return toast("Lỗi: " + r.error.message);
+  toast(editId ? "Đã cập nhật đơn" : "Đã lưu đơn hàng"); resetForm(); load();
+};
+
+/* ---------- Thanh toán ---------- */
+$("payBtn").onclick = () => $("payBox").classList.toggle("hide");
+$("copy").onclick = async () => {
+  try { await navigator.clipboard.writeText("0911157859"); }
+  catch { const t = document.createElement("textarea"); t.value = "0911157859"; document.body.appendChild(t); t.select(); document.execCommand("copy"); t.remove(); }
+  toast("Đã sao chép số Momo 0911157859");
+};
+
+/* ---------- Quản lý Menu (chỉ chủ quán) ---------- */
+function renderMenuRows() {
+  $("menuRows").innerHTML = menu.map(m => `<tr><td><b>${esc(m.name)}</b></td><td>${esc(m.description)}</td><td><b>${vnd(m.price)}</b></td><td><button data-me="${m.id}">Sửa</button> <button class="d" data-md="${m.id}">Xóa</button></td></tr>`).join("") || '<tr><td colspan="4" class="hint">Chưa có món nào. Hãy thêm món đầu tiên ở trên.</td></tr>';
+  document.querySelectorAll("[data-me]").forEach(b => b.onclick = () => { const m = menu.find(x => x.id === b.dataset.me); editMenuId = m.id; $("mname").value = m.name; $("mprice").value = m.price; $("mdesc").value = m.description || ""; $("mTitle").textContent = "Sửa món"; $("mSave").textContent = "Cập nhật món"; });
+  document.querySelectorAll("[data-md]").forEach(b => b.onclick = async () => { if (!isAdmin || !confirm("Xóa món này khỏi Menu?")) return; const { error } = await db.from("menu").delete().eq("id", b.dataset.md); error ? toast("Lỗi: " + error.message) : load(); });
+}
+function resetMenu() { editMenuId = null; ["mname", "mprice", "mdesc"].forEach(i => $(i).value = ""); $("mTitle").textContent = "Thêm món vào Menu"; $("mSave").textContent = "+ Thêm món"; }
+$("mReset").onclick = resetMenu;
+$("mSave").onclick = async () => {
+  if (!isAdmin) return;
+  const row = { name: $("mname").value.trim(), price: parseInt($("mprice").value), description: $("mdesc").value.trim() };
+  if (!row.name || !(row.price >= 0)) return toast("Nhập tên món và giá tiền hợp lệ");
+  const r = editMenuId ? await db.from("menu").update(row).eq("id", editMenuId) : await db.from("menu").insert(row);
+  if (r.error) return toast("Lỗi: " + r.error.message);
+  toast("Đã lưu món"); resetMenu(); load();
+};
+
+/* ---------- Xuất CSV ---------- */
+$("csv").onclick = () => {
+  const q = v => '"' + String(v ?? "").replace(/"/g, '""') + '"';
+  const rows = [["Khách hàng", "Món", "Tổng tiền", "Ngày đặt", "Ghi chú", "Đã thanh toán"]].concat(orders.map(o => [o.customer, o.items.map(i => i.name + " x" + i.qty).join("; "), total(o.items), o.order_date, o.note, o.paid ? "Có" : "Chưa"]));
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob(["\ufeff" + rows.map(r => r.map(q).join(",")).join("\n")], { type: "text/csv" }));
+  a.download = "don-hang.csv"; a.click();
+};
+
+/* ---------- Khởi động ---------- */
+$("odate").value = today();
+if (SUPABASE_URL.includes("YOUR-PROJECT")) $("cfg").classList.remove("hide");
+else { db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY); load(); setInterval(() => { if (document.visibilityState === "visible") load(); }, 20000); }
+const saved = localStorage.getItem("fo_user"); if (saved) enter(saved); else render();
+</script>
+</body>
+</html>
