@@ -93,15 +93,13 @@ td{padding:10px 8px;border-bottom:1px solid var(--bd);vertical-align:top}
     <div class="row"><select id="dish" style="flex:1;min-width:200px"></select>
       <input type="number" id="qty" min="1" value="1" style="width:80px" aria-label="Số lượng">
       <button class="p" id="addDish">+ Thêm vào đơn</button></div>
-    <div class="hint">Giá tiền và mô tả tự động lấy từ Menu. Bạn có thể thêm nhiều món vào một đơn.</div>
+    <div class="hint">Bạn có thể thêm nhiều món vào một đơn.</div>
     <div class="cart" id="cart"></div>
     <div class="g2">
       <div><label>Giá tiền (tổng các món)</label><input id="price" readonly placeholder="Tự động hiển thị"></div>
-      <div><label>Mô tả món ăn</label><textarea id="desc" rows="2" readonly placeholder="Tự động hiển thị"></textarea></div>
+      <div><label>Ghi chú</label><textarea id="desc" rows="2" readonly placeholder="Ví dụ: không hành, ít cay, giao trước 12h..."></textarea></div>
     </div>
-    <label for="note">Ghi chú</label>
-    <textarea id="note" rows="2" placeholder="Ví dụ: không hành, ít cay, giao trước 12h..."></textarea>
-    <div class="row" style="margin-top:12px">
+      <div class="row" style="margin-top:12px">
       <button class="p" id="save">+ Lưu đơn hàng</button><button id="reset">Làm mới</button>
       <button id="payBtn">💳 Thanh toán</button></div>
     <div class="pay hide" id="payBox">Momo: <b>0911157859</b>
