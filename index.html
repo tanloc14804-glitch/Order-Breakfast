@@ -146,7 +146,7 @@ function enter(name) {
   user = name.trim(); isAdmin = user === ADMIN;
   localStorage.setItem("fo_user", user);
   $("login").classList.add("hide");
-  $("whoami").textContent = (isAdmin ? "👑 Chủ quán: " : "👤 ") + user;
+  $("whoami").textContent = (isAdmin ? "👑 Chủ quán: " : "👤 Khách hàng: ") + user;
   $("tabMenu").classList.toggle("hide", !isAdmin);
   $("sumBox").classList.toggle("hide", !isAdmin);
   $("csv").classList.toggle("hide", !isAdmin);
