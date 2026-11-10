@@ -36,7 +36,8 @@ input[readonly],textarea[readonly]{background:var(--bg);color:var(--mu)}
 .cart .it{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--bd)}.cart .it:last-child{border:0}
 .q button{padding:2px 8px}
 .menus{display:flex;gap:10px;overflow-x:auto;padding-bottom:8px;scroll-snap-type:x proximity}
-.mflex:0 0 230px;scroll-snap-align:start;{border:1px solid var(--bd);border-radius:10px;padding:10px;cursor:pointer;background:var(--card);text-align:left;color:var(--tx)}.m:hover{border-color:var(--pr)}
+.m{flex:0 0 230px;scroll-snap-align:start;display:flex;flex-direction:column;gap:2px;border:1px solid var(--bd);border-radius:10px;padding:10px;background:var(--card);color:var(--tx);text-align:left}.m.sel{border-color:var(--pr);box-shadow:0 0 0 1px var(--pr)}.m .pick{margin-top:auto;width:100%}.m.sel .pick{background:var(--pr);color:#fff}
+.qb{display:flex;align-items:center;gap:6px}.qb button{width:30px;padding:4px 0;font-size:16px}.qb input{width:54px;text-align:center;padding:5px 4px}
 .m b{display:block}.m span{display:block;font-size:12px;color:var(--mu)}
 .st{color:#f59e0b;letter-spacing:1px}
 .pay{background:#fff7ed;border:1px solid #fdba74;color:#7c2d12;border-radius:8px;padding:10px 12px;margin-top:10px}
@@ -81,7 +82,9 @@ td{padding:10px 8px;border-bottom:1px solid var(--bd);vertical-align:top}
     <div class="card stat hide" id="sumBox"><small>Tổng giá trị đơn</small><b id="sSum">0 ₫</b></div>
   </div>
 
-  <div class="card"><h2>Thực đơn &amp; đánh giá</h2><div class="menus" id="menuCards"></div></div>
+  <div class="card"><h2>🍽️ Thực đơn hôm nay có gì?</h2>
+    <div class="row" style="margin-bottom:10px"><label for="catSel" style="margin:0">Phân loại:</label><select id="catSel" style="width:auto;min-width:160px"><option value="">Tất cả</option></select></div>
+    <div class="menus" id="menuCards"></div></div>
 
   <div class="card">
     <h2 id="formTitle">Tạo đơn đặt món</h2>
@@ -89,11 +92,8 @@ td{padding:10px 8px;border-bottom:1px solid var(--bd);vertical-align:top}
       <div><label for="cname">Tên khách hàng *</label><input id="cname"></div>
       <div><label for="odate">Ngày đặt món *</label><input type="date" id="odate"></div>
     </div>
-    <label for="dish">Món ăn *</label>
-    <div class="row"><select id="dish" style="flex:1;min-width:200px"></select>
-      <input type="number" id="qty" min="1" value="1" style="width:80px" aria-label="Số lượng">
-      <button class="p" id="addDish">+ Thêm vào đơn</button></div>
-    <div class="hint">Bạn có thể thêm nhiều món vào một đơn.</div>
+    <label>Món đã chọn *</label>
+    <div class="hint">Bấm nút “Chọn món” ở phần Thực đơn phía trên để thêm món vào đơn.</div>
     <div class="cart" id="cart"></div>
     <div class="g2">
       <div><label>Tổng giá tiền</label><input id="price" readonly placeholder="Tự động hiển thị"></div>
@@ -119,9 +119,10 @@ td{padding:10px 8px;border-bottom:1px solid var(--bd);vertical-align:top}
   <div class="card"><h2 id="mTitle">Thêm món vào Menu</h2>
     <div class="g2"><div><label for="mname">Tên món ăn *</label><input id="mname" placeholder="Ví dụ: Cơm gà xối mỡ"></div>
       <div><label for="mprice">Giá tiền (VNĐ) *</label><input type="number" id="mprice" placeholder="Ví dụ: 45000"></div></div>
+    <label for="mcat">Phân loại</label><input id="mcat" list="catList" placeholder="Ví dụ: Đồ nước, Đồ khô, Đồ chay, Nước uống" autocomplete="off"><datalist id="catList"></datalist>
     <label for="mdesc">Mô tả món ăn</label><textarea id="mdesc" rows="2" placeholder="Thành phần, khẩu phần, cách chế biến..."></textarea>
     <div class="row" style="margin-top:12px"><button class="p" id="mSave">+ Thêm món</button><button id="mReset">Làm mới</button></div></div>
-  <div class="card"><h2>Menu hiện tại</h2><div class="tw"><table style="min-width:520px"><thead><tr><th>Tên món ăn</th><th>Mô tả món ăn</th><th>Giá tiền</th><th>Thao tác</th></tr></thead><tbody id="menuRows"></tbody></table></div></div>
+  <div class="card"><h2>Menu hiện tại</h2><div class="tw"><table style="min-width:600px"><thead><tr><th>Tên món ăn</th><th>Phân loại</th><th>Mô tả món ăn</th><th>Giá tiền</th><th>Thao tác</th></tr></thead><tbody id="menuRows"></tbody></table></div></div>
 </section>
 </main>
 <div id="toast" class="hide"></div>
@@ -135,7 +136,7 @@ const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const vnd = n => Number(n || 0).toLocaleString("vi-VN") + " ₫";
 const today = () => new Date().toISOString().slice(0, 10);
-let db, user = null, isAdmin = false, menu = [], orders = [], cart = [], editId = null, editMenuId = null;
+let catFilter = "", db, user = null, isAdmin = false, menu = [], orders = [], cart = [], editId = null, editMenuId = null;
 const mine = o => user && (isAdmin || o.customer.trim().toLowerCase() === user.toLowerCase());
 const total = items => (items || []).reduce((s, i) => s + i.price * i.qty, 0);
 
@@ -192,30 +193,39 @@ function render() {
   $("sMenu").textContent = menu.length;
   $("sSum").textContent = vnd(orders.reduce((s, o) => s + total(o.items), 0));
 
-  const cur = $("dish").value;
-  $("dish").innerHTML = '<option value="">-- Chọn món trong Menu --</option>' + menu.map(m => `<option value="${m.id}">${esc(m.name)} - ${vnd(m.price)}</option>`).join("");
-  $("dish").value = cur;
-  $("menuCards").innerHTML = menu.length ? menu.map(m => `<button class="m" data-id="${m.id}"><b>${esc(m.name)}</b><span>${esc(m.description)}</span><b style="color:var(--pr)">${vnd(m.price)}</b><span>${starLine(rs[m.id])}</span></button>`).join("") : "<div class='hint'>Menu đang trống. Chủ quán hãy thêm món ở tab Quản lý Menu.</div>";
+  const cats = [...new Set(menu.map(m => (m.category || "").trim()).filter(Boolean))];
+  if (catFilter && !cats.includes(catFilter)) catFilter = "";
+  $("catSel").innerHTML = '<option value="">Tất cả</option>' + cats.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join("");
+  $("catSel").value = catFilter;
+  $("catList").innerHTML = cats.map(c => `<option value="${esc(c)}">`).join("");
+  const shown = menu.filter(m => !catFilter || (m.category || "").trim() === catFilter);
+  $("menuCards").innerHTML = shown.length ? shown.map(m => `<div class="m" data-id="${m.id}"><b>${esc(m.name)}</b><span>${esc(m.description)}</span><b style="color:var(--pr)">${vnd(m.price)}</b><span>${starLine(rs[m.id])}</span><button class="pick" data-pick="${m.id}"></button></div>`).join("") : "<div class='hint'>Chưa có món nào trong mục này.</div>";
+  document.querySelectorAll("[data-pick]").forEach(b => b.onclick = () => pick(b.dataset.pick));
 
   renderCart(); renderOrders(); renderMenuRows();
 }
 function renderCart() {
-  $("cart").innerHTML = cart.length ? cart.map((i, k) => `<div class="it"><span>${esc(i.name)} <small>(${vnd(i.price)})</small></span><span class="q row"><button data-k="${k}" data-d="-1">−</button><b>${i.qty}</b><button data-k="${k}" data-d="1">+</button><button class="d" data-k="${k}" data-d="x">Xóa</button></span></div>`).join("") : "<div class='hint'>Chưa chọn món nào.</div>";
-  $("cart").querySelectorAll("button").forEach(b => b.onclick = () => {
-    const i = cart[b.dataset.k], d = b.dataset.d;
-    if (d === "x") cart.splice(b.dataset.k, 1); else { i.qty += +d; if (i.qty < 1) cart.splice(b.dataset.k, 1); }
+  $("cart").innerHTML = cart.length ? cart.map((i, k) => `<div class="it"><span><b>${esc(i.name)}</b> <small>(${vnd(i.price)})</small></span><span class="qb"><input type="number" min="1" value="${i.qty}" data-q="${k}" aria-label="Số lượng"></span></div>`).join("") : "<div class='hint'>Chưa chọn món nào.</div>";
+  $("cart").querySelectorAll("[data-q]").forEach(inp => inp.onchange = () => {
+    const n = parseInt(inp.value) || 0;
+    n < 1 ? cart.splice(inp.dataset.q, 1) : (cart[inp.dataset.q].qty = n);
     renderCart();
   });
   $("price").value = cart.length ? vnd(total(cart)) : "";
+  document.querySelectorAll(".m").forEach(el => {
+    const on = cart.some(i => i.menu_id === el.dataset.id);
+    el.classList.toggle("sel", on);
+    el.querySelector(".pick").textContent = on ? "Bỏ chọn" : "Chọn món";
+  });
 }
 
-$("addDish").onclick = () => {
-  const m = menu.find(x => x.id === $("dish").value), q = Math.max(1, parseInt($("qty").value) || 1);
-  if (!m) return toast("Hãy chọn món ăn");
-  const e = cart.find(i => i.menu_id === m.id);
-  if (e) e.qty += q; else cart.push({ menu_id: m.id, name: m.name, price: m.price, desc: m.description, qty: q });
-  $("qty").value = 1; renderCart();
-};
+function pick(id) {
+  const m = menu.find(x => x.id === id); if (!m) return;
+  const k = cart.findIndex(i => i.menu_id === id);
+  if (k >= 0) { cart.splice(k, 1); toast("Đã bỏ chọn: " + m.name); }
+  else { cart.push({ menu_id: m.id, name: m.name, price: m.price, desc: m.description, qty: 1 }); toast("Đã chọn: " + m.name); }
+  renderCart();
+}
 
 function renderOrders() {
   const k = $("q").value.trim().toLowerCase();
@@ -234,6 +244,7 @@ function renderOrders() {
   document.querySelectorAll("[data-del]").forEach(b => b.onclick = () => delOrder(b.dataset.del));
 }
 $("q").oninput = renderOrders;
+$("catSel").onchange = () => { catFilter = $("catSel").value; render(); };
 
 async function update(id, patch) {
   const { error } = await db.from("orders").update(patch).eq("id", id);
@@ -254,7 +265,7 @@ async function delOrder(id) {
   const { error } = await db.from("orders").delete().eq("id", id); error ? toast("Lỗi: " + error.message) : (toast("Đã xóa đơn"), load());
 }
 function resetForm() {
-  editId = null; cart = []; $("cname").value = user || ""; $("odate").value = today(); $("note").value = ""; $("dish").value = "";
+  editId = null; cart = []; $("cname").value = user || ""; $("odate").value = today(); $("note").value = "";
   $("formTitle").textContent = "Tạo đơn đặt món"; $("save").textContent = "+ Lưu đơn hàng"; renderCart();
 }
 $("reset").onclick = resetForm;
@@ -281,15 +292,15 @@ $("copy").onclick = async () => {
 
 /* ---------- Quản lý Menu (chỉ chủ quán) ---------- */
 function renderMenuRows() {
-  $("menuRows").innerHTML = menu.map(m => `<tr><td><b>${esc(m.name)}</b></td><td>${esc(m.description)}</td><td><b>${vnd(m.price)}</b></td><td><button data-me="${m.id}">Sửa</button> <button class="d" data-md="${m.id}">Xóa</button></td></tr>`).join("") || '<tr><td colspan="4" class="hint">Chưa có món nào. Hãy thêm món đầu tiên ở trên.</td></tr>';
-  document.querySelectorAll("[data-me]").forEach(b => b.onclick = () => { const m = menu.find(x => x.id === b.dataset.me); editMenuId = m.id; $("mname").value = m.name; $("mprice").value = m.price; $("mdesc").value = m.description || ""; $("mTitle").textContent = "Sửa món"; $("mSave").textContent = "Cập nhật món"; });
+  $("menuRows").innerHTML = menu.map(m => `<tr><td><b>${esc(m.name)}</b></td><td>${esc(m.category)}</td><td>${esc(m.description)}</td><td><b>${vnd(m.price)}</b></td><td><button data-me="${m.id}">Sửa</button> <button class="d" data-md="${m.id}">Xóa</button></td></tr>`).join("") || '<tr><td colspan="5" class="hint">Chưa có món nào. Hãy thêm món đầu tiên ở trên.</td></tr>';
+  document.querySelectorAll("[data-me]").forEach(b => b.onclick = () => { const m = menu.find(x => x.id === b.dataset.me); editMenuId = m.id; $("mname").value = m.name; $("mprice").value = m.price; $("mdesc").value = m.description || ""; $("mcat").value = m.category || ""; $("mTitle").textContent = "Sửa món"; $("mSave").textContent = "Cập nhật món"; });
   document.querySelectorAll("[data-md]").forEach(b => b.onclick = async () => { if (!isAdmin || !confirm("Xóa món này khỏi Menu?")) return; const { error } = await db.from("menu").delete().eq("id", b.dataset.md); error ? toast("Lỗi: " + error.message) : load(); });
 }
-function resetMenu() { editMenuId = null; ["mname", "mprice", "mdesc"].forEach(i => $(i).value = ""); $("mTitle").textContent = "Thêm món vào Menu"; $("mSave").textContent = "+ Thêm món"; }
+function resetMenu() { editMenuId = null; ["mname", "mprice", "mdesc", "mcat"].forEach(i => $(i).value = ""); $("mTitle").textContent = "Thêm món vào Menu"; $("mSave").textContent = "+ Thêm món"; }
 $("mReset").onclick = resetMenu;
 $("mSave").onclick = async () => {
   if (!isAdmin) return;
-  const row = { name: $("mname").value.trim(), price: parseInt($("mprice").value), description: $("mdesc").value.trim() };
+  const row = { name: $("mname").value.trim(), price: parseInt($("mprice").value), description: $("mdesc").value.trim(), category: $("mcat").value.trim() || null };
   if (!row.name || !(row.price >= 0)) return toast("Nhập tên món và giá tiền hợp lệ");
   const r = editMenuId ? await db.from("menu").update(row).eq("id", editMenuId) : await db.from("menu").insert(row);
   if (r.error) return toast("Lỗi: " + r.error.message);
