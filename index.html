@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Lộc ơi 🥪 Hôm nay mình ăn gì thế?</title>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <style>
 :root{--bg:#f4f7fc;--card:#fff;--tx:#111827;--mu:#6b7280;--bd:#e5e7eb;--pr:#2563eb;--hd1:#17357e;--hd2:#2b6df0;--ok:#16a34a;--bad:#dc2626}
@@ -48,6 +49,12 @@ td{padding:10px 8px;border-bottom:1px solid var(--bd);vertical-align:top}
 .tag{font-size:11px;padding:1px 7px;border-radius:99px;background:#dcfce7;color:#166534}
 .mine{box-shadow:inset 3px 0 0 var(--pr)}
 .hide{display:none!important}
+.mb{max-height:92vh;overflow:auto}
+.qr{display:block;margin:10px auto;width:230px;max-width:100%;height:auto;border:1px solid var(--bd);border-radius:10px;background:#fff}
+.amt{font-size:24px;font-weight:700;color:var(--pr);text-align:center}
+.kv{display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px solid var(--bd)}
+.chip{border:1px solid var(--bd);background:var(--card);color:var(--tx)}
+.chip.on{background:var(--pr);color:#fff;border-color:var(--pr)}
 #toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#111827;color:#fff;padding:10px 16px;border-radius:8px;z-index:30}
 .ov{position:fixed;inset:0;background:rgba(15,23,42,.65);display:flex;align-items:center;justify-content:center;z-index:20;padding:16px}
 .mb{background:var(--card);border-radius:14px;padding:22px;width:100%;max-width:400px}
@@ -90,7 +97,7 @@ td{padding:10px 8px;border-bottom:1px solid var(--bd);vertical-align:top}
     <h2 id="formTitle">Tạo đơn đặt món</h2>
     <div class="g2">
       <div><label for="cname">Tên khách hàng *</label><input id="cname"></div>
-      <div><label for="odate">Ngày đặt món *</label><input type="date" id="odate"></div>
+      <div><label for="odate">Đặt món cho ngày *</label><input type="date" id="odate"></div>
     </div>
     <label>Món đã chọn *</label>
     <div class="hint">Bấm nút “Chọn món” ở phần Thực đơn phía trên để thêm món vào đơn.</div>
@@ -101,15 +108,16 @@ td{padding:10px 8px;border-bottom:1px solid var(--bd);vertical-align:top}
     </div>
       <div class="row" style="margin-top:12px">
       <button class="p" id="save">+ Lưu đơn hàng</button><button id="reset">Làm mới</button>
-      <button id="payBtn">💳 Thanh toán</button></div>
+      <button id="payBtn">💳 Thông tin thanh toán</button></div>
     <div class="pay hide" id="payBox">Momo: <b>0911157859</b>
       <button id="copy" style="padding:2px 8px;margin:0 4px" title="Sao chép số Momo">📋 Sao chép</button> - Người nhận: <b>Phan Tấn Lộc</b>
-      <div class="hint">Thu đi để lại đá vàng, tiền đi để lại vô vàn món ngon 🌭 Mọi người nhớ thanh toán và tick “Đã thanh toán”. Ngoài ra, mọi người có thể Tips thêm vì đó là nguồn động lực dồi dào, vô cùng to lớn, siêu to khổng lồ để Tấn Lộc làm việc tâm huyết hơn 💖.</div></div>
+      <div class="hint">Thu đi để lại đá vàng, tiền đi để lại vô vàn món ngon 🌭 Mọi người nhớ thanh toán bằng nút “Thanh toán nhanh” trong Danh sách đơn hàng. Ngoài ra, mọi người có thể Tips thêm vì đó là nguồn động lực dồi dào, vô cùng to lớn, siêu to khổng lồ để Tấn Lộc làm việc tâm huyết hơn 💖.</div></div>
   </div>
 
   <div class="card">
     <div class="row" style="justify-content:space-between"><h2 style="margin:0">Danh sách đơn hàng</h2>
-      <input id="q" placeholder="Tìm theo tên khách / món ăn..." style="max-width:300px"></div>
+      <div class="row" style="flex:1;justify-content:flex-end"><select id="dateSel" style="width:auto" aria-label="Khoảng thời gian"><option value="today">Hôm nay</option><option value="7" selected>7 ngày qua</option><option value="30">30 ngày qua</option><option value="all">Tất cả</option></select>
+      <input id="q" placeholder="Tìm theo tên khách / món ăn..." style="flex:1;min-width:150px;max-width:260px"></div></div>
     <div class="tw" style="margin-top:10px"><table><thead><tr><th>Khách hàng</th><th>Món đã đặt &amp; đánh giá</th><th>Tổng tiền</th><th>Ngày đặt</th><th>Ghi chú</th><th>Đã thanh toán</th><th>Thao tác</th></tr></thead><tbody id="orders"></tbody></table></div>
     <button id="csv" class="hide" style="margin-top:12px">Xuất đơn hàng CSV</button>
   </div>
@@ -125,6 +133,25 @@ td{padding:10px 8px;border-bottom:1px solid var(--bd);vertical-align:top}
   <div class="card"><h2>Menu hiện tại</h2><div class="tw"><table style="min-width:600px"><thead><tr><th>Tên món ăn</th><th>Phân loại</th><th>Mô tả món ăn</th><th>Giá tiền</th><th>Thao tác</th></tr></thead><tbody id="menuRows"></tbody></table></div></div>
 </section>
 </main>
+<div class="ov hide" id="cfModal"><div class="mb">
+  <h2>Xác nhận đơn hàng</h2>
+  <div id="cfItems"></div>
+  <label style="margin-top:12px">Tips cho Tấn Lộc 💖</label>
+  <div class="row" id="cfTips"></div>
+  <div class="kv" style="margin-top:12px;border:0"><span>Tổng cộng</span><b id="cfTotal" style="font-size:18px;color:var(--pr)"></b></div>
+  <div class="row" style="justify-content:flex-end;margin-top:8px"><button id="cfBack">Quay lại</button><button class="p" id="cfOk">Xác nhận đặt món</button></div>
+  <div class="hint" style="text-align:center;margin-top:12px">Cảm ơn bạn đã ủng hộ quán, chúc bạn ăn ngon miệng! 🥪</div>
+</div></div>
+<div class="ov hide" id="payModal"><div class="mb">
+  <h2>Thanh toán nhanh</h2>
+  <div class="amt" id="pmAmt"></div>
+  <img class="qr" id="pmQR" alt="Mã QR nhận tiền MoMo kèm số tiền">
+  <div class="kv"><span>Momo</span><span><b>0911157859</b> <button id="pmCopy" style="padding:1px 7px">📋</button></span></div>
+  <div class="kv"><span>Người nhận</span><b>Phan Tấn Lộc</b></div>
+  <div class="kv"><span>Khách hàng</span><b id="pmName"></b></div>
+  <div class="hint" style="margin:8px 0">Quét mã bằng MoMo hoặc app ngân hàng, số tiền đã được điền sẵn. Chỉ bấm xác nhận sau khi đã chuyển tiền xong.</div>
+  <div class="row" style="justify-content:flex-end"><button id="pmClose">Đóng</button><button class="p" id="pmOk">Xác nhận đã thanh toán</button></div>
+</div></div>
 <div id="toast" class="hide"></div>
 
 <script>
@@ -135,9 +162,12 @@ const ADMIN = "tanloc04";
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const vnd = n => Number(n || 0).toLocaleString("vi-VN") + " ₫";
-const today = () => new Date().toISOString().slice(0, 10);
+const ymd = d => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+const today = () => ymd(new Date());
+const daysAgo = n => { const d = new Date(); d.setDate(d.getDate() - n); return ymd(d); };
 let catFilter = "", db, user = null, isAdmin = false, menu = [], orders = [], cart = [], editId = null, editMenuId = null;
 const mine = o => user && (isAdmin || o.customer.trim().toLowerCase() === user.toLowerCase());
+const grand = o => total(o.items) + (o.tip || 0);
 const total = items => (items || []).reduce((s, i) => s + i.price * i.qty, 0);
 
 function toast(t) { const e = $("toast"); e.textContent = t; e.classList.remove("hide"); clearTimeout(toast.t); toast.t = setTimeout(() => e.classList.add("hide"), 2600); }
@@ -191,7 +221,7 @@ function render() {
   const rs = ratingStats();
   $("sOrders").textContent = orders.length;
   $("sMenu").textContent = menu.length;
-  $("sSum").textContent = vnd(orders.reduce((s, o) => s + total(o.items), 0));
+  $("sSum").textContent = vnd(orders.reduce((s, o) => s + grand(o), 0));
 
   const cats = [...new Set(menu.map(m => (m.category || "").trim()).filter(Boolean))];
   if (catFilter && !cats.includes(catFilter)) catFilter = "";
@@ -229,21 +259,24 @@ function pick(id) {
 
 function renderOrders() {
   const k = $("q").value.trim().toLowerCase();
-  const list = orders.filter(o => !k || o.customer.toLowerCase().includes(k) || (o.items || []).some(i => i.name.toLowerCase().includes(k)));
+  const df = $("dateSel").value, from = df === "7" ? daysAgo(6) : df === "30" ? daysAgo(29) : "";
+  const list = orders.filter(o => (df === "all" || (df === "today" ? o.order_date === today() : o.order_date >= from)) && (!k || o.customer.toLowerCase().includes(k) || (o.items || []).some(i => i.name.toLowerCase().includes(k))));
   $("orders").innerHTML = list.length ? list.map(o => {
     const own = mine(o);
     const items = (o.items || []).map((i, n) => `<div><b>${esc(i.name)}</b> × ${i.qty} <span class="rate">${[1, 2, 3, 4, 5].map(s => `<button data-o="${o.id}" data-n="${n}" data-s="${s}" ${own && !i.rating ? "" : "disabled"} aria-label="${s} sao">${i.rating >= s ? "★" : "☆"}</button>`).join("")}</span></div>`).join("");
-    return `<tr class="${own ? "mine" : ""}"><td><b>${esc(o.customer)}</b></td><td>${items}${own ? '<div class="hint">Mỗi món chỉ đánh giá 1 lần.</div>' : ""}</td><td><b>${vnd(total(o.items))}</b></td><td>${esc(o.order_date)}</td><td>${esc(o.note)}</td>
-    <td><input type="checkbox" style="width:auto" data-pay="${o.id}" ${o.paid ? "checked" : ""} ${own ? "" : "disabled"} aria-label="Đã thanh toán"> ${o.paid ? '<span class="tag">Đã trả</span>' : ""}</td>
-    <td>${own ? `<button data-edit="${o.id}">Sửa</button> <button class="d" data-del="${o.id}">Xóa</button>` : '<span class="hint">Chỉ xem</span>'}</td></tr>`;
-  }).join("") : '<tr><td colspan="7" class="hint">Chưa có đơn hàng nào.</td></tr>';
+    return `<tr class="${own ? "mine" : ""}"><td><b>${esc(o.customer)}</b></td><td>${items}${own ? '<div class="hint">Mỗi món chỉ đánh giá 1 lần.</div>' : ""}</td><td><b>${vnd(grand(o))}</b>${o.tip ? `<div class="hint">gồm tip ${vnd(o.tip)}</div>` : ""}</td><td>${esc(o.order_date)}</td><td>${esc(o.note)}</td>
+    <td>${o.paid ? '<span class="tag">Đã thanh toán</span>' + (isAdmin ? ` <button data-unpay="${o.id}" style="padding:1px 7px;font-size:11px">Hoàn tác</button>` : "") : (own ? `<button class="p" data-pay="${o.id}">Thanh toán nhanh</button>` : '<span class="hint">Chưa thanh toán</span>')}</td>
+    <td>${own ? `<button data-edit="${o.id}">Sửa</button>${isAdmin ? ` <button class="d" data-del="${o.id}">Xóa</button>` : ""}` : '<span class="hint">Chỉ xem</span>'}</td></tr>`;
+  }).join("") : '<tr><td colspan="7" class="hint">Không có đơn hàng nào trong khoảng thời gian này.</td></tr>';
 
   document.querySelectorAll(".rate button:not(:disabled)").forEach(b => b.onclick = () => rate(b.dataset.o, +b.dataset.n, +b.dataset.s));
-  document.querySelectorAll("[data-pay]:not(:disabled)").forEach(b => b.onchange = () => update(b.dataset.pay, { paid: b.checked }));
+  document.querySelectorAll("[data-pay]").forEach(b => b.onclick = () => openPay(b.dataset.pay));
+  document.querySelectorAll("[data-unpay]").forEach(b => b.onclick = () => confirm("Hoàn tác trạng thái đã thanh toán?") && update(b.dataset.unpay, { paid: false }));
   document.querySelectorAll("[data-edit]").forEach(b => b.onclick = () => startEdit(b.dataset.edit));
   document.querySelectorAll("[data-del]").forEach(b => b.onclick = () => delOrder(b.dataset.del));
 }
 $("q").oninput = renderOrders;
+$("dateSel").onchange = renderOrders;
 $("catSel").onchange = () => { catFilter = $("catSel").value; render(); };
 
 async function update(id, patch) {
@@ -261,7 +294,7 @@ function startEdit(id) {
   $("formTitle").textContent = "Sửa đơn hàng"; $("save").textContent = "Cập nhật đơn hàng"; renderCart(); scrollTo({ top: 0, behavior: "smooth" });
 }
 async function delOrder(id) {
-  const o = orders.find(x => x.id === id); if (!o || !mine(o) || !confirm("Xóa đơn hàng này?")) return;
+  const o = orders.find(x => x.id === id); if (!isAdmin || !o || !confirm("Xóa đơn hàng này?")) return;
   const { error } = await db.from("orders").delete().eq("id", id); error ? toast("Lỗi: " + error.message) : (toast("Đã xóa đơn"), load());
 }
 function resetForm() {
@@ -270,19 +303,77 @@ function resetForm() {
 }
 $("reset").onclick = resetForm;
 
-$("save").onclick = async () => {
+$("save").onclick = () => {
   const name = $("cname").value.trim();
   if (!name || !$("odate").value) return toast("Vui lòng nhập tên khách hàng và ngày đặt");
-  if (!cart.length) return toast("Hãy thêm ít nhất 1 món vào đơn");
-  const row = { customer: isAdmin ? name : user, order_date: $("odate").value, note: $("note").value.trim(), items: cart };
+  if (!cart.length) return toast("Hãy chọn ít nhất 1 món");
+  if (editId && !mine(orders.find(o => o.id === editId))) return toast("Bạn chỉ sửa được đơn của mình");
+  getCtx();
+  pending = { customer: isAdmin ? name : user, order_date: $("odate").value, note: $("note").value.trim(), items: cart };
+  pendTip = editId ? (orders.find(o => o.id === editId)?.tip || 0) : 0;
+  $("cfItems").innerHTML = cart.map(i => `<div class="kv"><span>${esc(i.name)} × ${i.qty}</span><b>${vnd(i.price * i.qty)}</b></div>`).join("");
+  $("cfTips").innerHTML = TIPS.map(t => `<button class="chip" data-tip="${t}">${t ? vnd(t) : "Bỏ qua"}</button>`).join("");
+  $("cfTips").querySelectorAll("button").forEach(b => b.onclick = () => { pendTip = +b.dataset.tip; cfRefresh(); });
+  cfRefresh(); $("cfModal").classList.remove("hide");
+};
+function cfRefresh() {
+  document.querySelectorAll("#cfTips .chip").forEach(b => b.classList.toggle("on", +b.dataset.tip === pendTip));
+  $("cfTotal").textContent = vnd(total(cart) + pendTip);
+}
+$("cfBack").onclick = () => $("cfModal").classList.add("hide");
+$("cfOk").onclick = async () => {
+  if (!pending) return;
+  const row = { ...pending, tip: pendTip }, wasEdit = !!editId;
+  $("cfOk").disabled = true;
   let r;
-  if (editId) { if (!mine(orders.find(o => o.id === editId))) return toast("Bạn chỉ sửa được đơn của mình"); r = await db.from("orders").update(row).eq("id", editId); }
+  if (editId) r = await db.from("orders").update(row).eq("id", editId);
   else r = await db.from("orders").insert({ ...row, paid: false });
+  $("cfOk").disabled = false;
   if (r.error) return toast("Lỗi: " + r.error.message);
-  toast(editId ? "Đã cập nhật đơn" : "Đã lưu đơn hàng"); resetForm(); load();
+  orderSound(); $("cfModal").classList.add("hide"); pending = null;
+  toast(wasEdit ? "Đã cập nhật đơn hàng ✅" : "Đặt món thành công ✅ Cảm ơn bạn!"); resetForm(); load();
 };
 
+/* ---------- Âm thanh ---------- */
+let actx = null;
+function getCtx() { try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === "suspended") actx.resume(); } catch (e) {} return actx; }
+function melody(notes, type) {
+  const c = getCtx(); if (!c) return; const t0 = c.currentTime + 0.02;
+  notes.forEach(([f, d]) => { const o = c.createOscillator(), g = c.createGain(); o.type = type; o.frequency.value = f;
+    g.gain.setValueAtTime(0.0001, t0 + d); g.gain.exponentialRampToValueAtTime(0.3, t0 + d + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t0 + d + 0.4);
+    o.connect(g); g.connect(c.destination); o.start(t0 + d); o.stop(t0 + d + 0.45); });
+}
+const orderSound = () => melody([[659, 0], [880, 0.12], [1047, 0.24]], "sine");
+const paySound = () => melody([[784, 0], [988, 0.12], [1319, 0.24], [1568, 0.38]], "triangle");
+
 /* ---------- Thanh toán ---------- */
+const TIPS = [0, 1000, 2000, 5000, 10000];
+let pending = null, pendTip = 0, payId = null;
+const crc16 = s => { let c = 0xFFFF; for (let i = 0; i < s.length; i++) { c ^= s.charCodeAt(i) << 8; for (let k = 0; k < 8; k++) c = c & 0x8000 ? ((c << 1) ^ 0x1021) & 0xFFFF : (c << 1) & 0xFFFF; } return c.toString(16).toUpperCase().padStart(4, "0"); };
+const tlv = (t, v) => t + String(v.length).padStart(2, "0") + v;
+const noAccent = s => String(s).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d").replace(/Đ/g, "D").replace(/[^A-Za-z0-9 ]/g, "").trim().slice(0, 25);
+function momoQR(amount, msg) {
+  const acct = tlv("00", "A000000727") + tlv("01", tlv("00", "971025") + tlv("01", "0911157859")) + tlv("02", "QRIBFTTA");
+  const add = tlv("05", "MOMOW2W72657436") + tlv("06", "yIFOqM12BJ3F9DuroL-cUw") + (msg ? tlv("08", msg) : "");
+  const body = "000201" + "010212" + tlv("38", acct) + "5303704" + tlv("54", String(Math.round(amount))) + "5802VN" + tlv("62", add) + "6304";
+  return body + crc16(body);
+}
+function openPay(id) {
+  const o = orders.find(x => x.id === id); if (!o || !mine(o) || o.paid) return;
+  getCtx(); payId = id; const amount = grand(o);
+  $("pmAmt").textContent = vnd(amount); $("pmName").textContent = o.customer;
+  try { const qr = qrcode(0, "M"); qr.addData(momoQR(amount, noAccent(o.customer))); qr.make(); $("pmQR").src = qr.createDataURL(6, 4); $("pmQR").classList.remove("hide"); }
+  catch (e) { $("pmQR").classList.add("hide"); toast("Không tạo được mã QR, hãy chuyển khoản theo số Momo"); }
+  $("payModal").classList.remove("hide");
+}
+$("pmClose").onclick = () => { $("payModal").classList.add("hide"); payId = null; };
+$("pmOk").onclick = async () => {
+  const o = orders.find(x => x.id === payId); if (!o || !mine(o)) return;
+  const { error } = await db.from("orders").update({ paid: true }).eq("id", payId);
+  if (error) return toast("Lỗi: " + error.message);
+  paySound(); $("payModal").classList.add("hide"); payId = null; toast("🎉 Thanh toán thành công! Cảm ơn bạn!"); load();
+};
+$("pmCopy").onclick = () => $("copy").click();
 $("payBtn").onclick = () => $("payBox").classList.toggle("hide");
 $("copy").onclick = async () => {
   try { await navigator.clipboard.writeText("0911157859"); }
@@ -310,7 +401,7 @@ $("mSave").onclick = async () => {
 /* ---------- Xuất CSV ---------- */
 $("csv").onclick = () => {
   const q = v => '"' + String(v ?? "").replace(/"/g, '""') + '"';
-  const rows = [["Khách hàng", "Món", "Tổng tiền", "Ngày đặt", "Ghi chú", "Đã thanh toán"]].concat(orders.map(o => [o.customer, o.items.map(i => i.name + " x" + i.qty).join("; "), total(o.items), o.order_date, o.note, o.paid ? "Có" : "Chưa"]));
+  const rows = [["Khách hàng", "Món", "Tổng tiền (gồm tip)", "Ngày đặt", "Ghi chú", "Đã thanh toán"]].concat(orders.map(o => [o.customer, o.items.map(i => i.name + " x" + i.qty).join("; "), grand(o), o.order_date, o.note, o.paid ? "Có" : "Chưa"]));
   const a = document.createElement("a");
   a.href = URL.createObjectURL(new Blob(["\ufeff" + rows.map(r => r.map(q).join(",")).join("\n")], { type: "text/csv" }));
   a.download = "don-hang.csv"; a.click();
